@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { createUserService, deleteUserService, getAllUsersService, getUserByIdService, updateUserService } from "../Models/userModel.js";
+import { createUserService, deleteUserService, getAllUsersService, getUserByIdService, updateUserService, getUserByEmailService, verifyPassword } from "../Services/userModel.js";
+import { signToken, verifyToken } from "../utils/jwt.js";
 
 const handleResponse = (res: Response, message: string, status: number, data: any = null) => {
   res.status(status).json({
@@ -8,6 +9,67 @@ const handleResponse = (res: Response, message: string, status: number, data: an
     data
   });
 };
+
+export const register = async (req: Request, res: Response, next: any) => {
+  const { name, email, password } = req.body;
+  
+  try {
+    // Check if user already exists
+    const existingUser = await getUserByEmailService(email);
+    if (existingUser) {
+      return handleResponse(res, "User already exists with this email", 409);
+    }
+
+    // Create new user with password
+    const newUser = await createUserService(name, email, password);
+    
+    // Generate JWT token
+    const token = signToken({
+      userId: newUser.id,
+      email: newUser.email
+    });
+
+    handleResponse(res, "User registered successfully", 201, {
+      user: newUser,
+      token
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export const login = async (req: Request, res: Response, next: any) => {
+  const { email, password } = req.body;
+  
+  try {
+    // Find user by email
+    const user = await getUserByEmailService(email);
+    if (!user) {
+      return handleResponse(res, "Invalid email or password", 401);
+    }
+
+    // Verify password
+    const isPasswordValid = await verifyPassword(password, user.password);
+    if (!isPasswordValid) {
+      return handleResponse(res, "Invalid email or password", 401);
+    }
+
+    // Generate JWT token
+    const token = signToken({
+      userId: user.id,
+      email: user.email
+    });
+
+    // Return user without password
+    const { password: _, ...userWithoutPassword } = user;
+    handleResponse(res, "Login successful", 200, {
+      user: userWithoutPassword,
+      token
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export const getAllUsers = async (req: Request, res: Response, next: any) => {
     try {

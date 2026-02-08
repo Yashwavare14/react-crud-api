@@ -8,9 +8,16 @@ export const createUserTable = async () => {
     created_at TIMESTAMP DEFAULT NOW()
 );`;
 
+
+
     try {
         await pool.query(queryText);
         console.log("User table created");
+
+        await pool.query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS password VARCHAR(255) NOT NULL;
+        `);
     } catch (error) {
         console.error("error creating user table", error)
     }
