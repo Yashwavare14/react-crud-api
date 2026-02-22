@@ -8,8 +8,6 @@ export const createUserTable = async () => {
     created_at TIMESTAMP DEFAULT NOW()
 );`;
 
-
-
     try {
         await pool.query(queryText);
         console.log("User table created");
