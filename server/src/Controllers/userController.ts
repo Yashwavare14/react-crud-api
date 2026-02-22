@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { createUserService, deleteUserService, getAllUsersService, getUserByIdService, updateUserService, getUserByEmailService, verifyPassword } from "../Services/userModel.js";
 import { signToken, verifyToken } from "../utils/jwt.js";
+import pool from "../Config/db.js";
 
 const handleResponse = (res: Response, message: string, status: number, data: any = null) => {
   res.status(status).json({
@@ -19,6 +20,9 @@ export const register = async (req: Request, res: Response, next: any) => {
     if (existingUser) {
       return handleResponse(res, "User already exists with this email", 409);
     }
+
+    //const abcuser = await pool.query("INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, created_at", [name, email, password]);
+    //console.log("abcuser", abcuser.rows[0]);
 
     // Create new user with password
     const newUser = await createUserService(name, email, password);
